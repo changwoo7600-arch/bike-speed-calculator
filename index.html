@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자전거 주행 계산기</title>
+
+  <!--
+    2. 디자인을 만드는 부분
+    style 안에는 화면의 색, 크기, 간격, 배치 같은 꾸미기 규칙을 적습니다.
+  -->
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+      color: #202124;
+      background:
+        linear-gradient(135deg, rgba(48, 120, 104, 0.9), rgba(46, 82, 132, 0.86)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.12' stroke-width='6'%3E%3Ccircle cx='62' cy='142' r='36'/%3E%3Ccircle cx='158' cy='142' r='36'/%3E%3Cpath d='M62 142 98 92 126 142 86 142 118 92h28l12 50M98 92h-18'/%3E%3C/g%3E%3C/svg%3E");
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 28px 16px;
+    }
+
+    /* main은 흰색 계산기 박스 전체를 감싸는 큰 상자입니다. */
+    main {
+      width: 100%;
+      max-width: 860px;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.24);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 28px 30px 20px;
+      border-bottom: 1px solid #e8edf2;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      color: #12343b;
+      line-height: 1.25;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+
+    h2 {
+      font-size: 21px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #5f6f7a;
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    section {
+      padding: 26px 30px 30px;
+    }
+
+    .calculator {
+      border-bottom: 1px solid #e8edf2;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #263238;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input {
+      width: 100%;
+      height: 48px;
+      border: 1px solid #cdd7df;
+      border-radius: 6px;
+      padding: 0 13px;
+      font-size: 17px;
+      color: #1f2933;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus {
+      border-color: #1f8a70;
+      box-shadow: 0 0 0 3px rgba(31, 138, 112, 0.14);
+    }
+
+    .unit {
+      min-width: 38px;
+      color: #52616b;
+      font-weight: 700;
+    }
+
+    /* form-grid는 입력칸을 두 칸짜리 표처럼 정렬합니다. */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 18px;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    button {
+      height: 52px;
+      border: 0;
+      border-radius: 6px;
+      background: #1f8a70;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    button:hover {
+      background: #176f5a;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .primary-button {
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .danger-button {
+      min-width: 132px;
+      height: 42px;
+      padding: 0 16px;
+      background: #b53b2d;
+      font-size: 15px;
+    }
+
+    .danger-button:hover {
+      background: #953026;
+    }
+
+    /* message는 계산 결과나 입력 오류 안내문을 보여주는 상자입니다. */
+    .message {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 6px;
+      line-height: 1.55;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.error {
+      background: #fff3f0;
+      border: 1px solid #ffb8aa;
+      color: #9b2c1f;
+    }
+
+    .message.success {
+      background: #edf8f5;
+      border: 1px solid #9bd5c8;
+      color: #124f43;
+      text-align: center;
+    }
+
+    .speed {
+      display: block;
+      margin-top: 6px;
+      font-size: 34px;
+      font-weight: 900;
+      color: #0f6d59;
+    }
+
+    .hint {
+      margin: 18px 0 0;
+      color: #687782;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .record-message {
+      margin-top: 0;
+      margin-bottom: 18px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid #dce4ea;
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 680px;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 13px 12px;
+      border-bottom: 1px solid #e8edf2;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f4f8f7;
+      color: #263238;
+      font-weight: 800;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .empty-row td {
+      color: #687782;
+      text-align: center;
+      white-space: normal;
+    }
+
+    /* 화면이 좁은 휴대폰에서는 입력칸을 한 줄에 하나씩 보여줍니다. */
+    @media (max-width: 640px) {
+      header,
+      section {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .form-grid,
+      .time-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .danger-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    1. 화면을 만드는 부분
+    body 안에는 사용자가 실제로 보는 제목, 입력칸, 버튼, 표를 적습니다.
+  -->
+  <main>
+    <header>
+      <h1>자전거 주행 계산기</h1>
+      <p class="subtitle">평균속도를 계산하고, 주행 기록을 브라우저에 저장합니다.</p>
+    </header>
+
+    <!-- 평균속도 계산 영역입니다. -->
+    <section class="calculator" aria-label="평균속도 계산기">
+      <div class="section-head">
+        <h2>평균속도 계산</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="distance">주행거리</label>
+          <div class="input-row">
+            <input id="distance" type="number" min="0" step="0.1" placeholder="예: 25.5">
+            <span class="unit">km</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>주행시간</label>
+          <div class="time-grid">
+            <div class="input-row">
+              <input id="hours" type="number" min="0" step="1" placeholder="시간">
+              <span class="unit">시간</span>
+            </div>
+            <div class="input-row">
+              <input id="minutes" type="number" min="0" step="1" placeholder="분">
+              <span class="unit">분</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="calculateButton" class="primary-button">계산하기</button>
+
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+
+      <p class="hint">예시: 30km를 1시간 30분 동안 달렸다면 평균속도는 20.00km/h입니다.</p>
+    </section>
+
+    <!-- 주행 기록을 저장하고 표로 보여주는 영역입니다. -->
+    <section class="records" aria-label="주행 기록 저장">
+      <div class="section-head">
+        <h2>주행 기록 저장</h2>
+        <button type="button" id="clearRecordsButton" class="danger-button">전체 기록 삭제</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="recordDate">날짜</label>
+          <input id="recordDate" type="date">
+        </div>
+
+        <div class="field">
+          <label for="courseName">코스명</label>
+          <input id="courseName" type="text" placeholder="예: 한강 자전거길">
+        </div>
+
+        <div class="field">
+          <label for="recordDistance">거리</label>
+          <div class="input-row">
+            <input id="recordDistance" type="number" min="0" step="0.1" placeholder="예: 42.2">
+            <span class="unit">km</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>시간</label>
+          <div class="time-grid">
+            <div class="input-row">
+              <input id="recordHours" type="number" min="0" step="1" placeholder="시간">
+              <span class="unit">시간</span>
+            </div>
+            <div class="input-row">
+              <input id="recordMinutes" type="number" min="0" step="1" placeholder="분">
+              <span class="unit">분</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="saveRecordButton" class="primary-button">저장하기</button>
+
+      <div id="recordMessage" class="message record-message" role="status" aria-live="polite"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>코스명</th>
+              <th>거리</th>
+              <th>시간</th>
+              <th>평균속도</th>
+            </tr>
+          </thead>
+          <tbody id="recordTableBody">
+            <tr class="empty-row">
+              <td colspan="5">저장된 주행 기록이 없습니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!--
+    3. 계산을 담당하는 부분
+    script 안에는 버튼을 눌렀을 때 실행되는 계산, 저장, 삭제 동작을 적습니다.
+  -->
+  <script>
+    // localStorage에 기록을 저장할 때 사용할 이름입니다.
+    const STORAGE_KEY = "bikeRideRecords";
+
+    // HTML에 있는 입력칸과 버튼을 JavaScript에서 사용할 수 있게 가져옵니다.
+    const distanceInput = document.getElementById("distance");
+    const hoursInput = document.getElementById("hours");
+    const minutesInput = document.getElementById("minutes");
+    const calculateButton = document.getElementById("calculateButton");
+    const message = document.getElementById("message");
+
+    const recordDateInput = document.getElementById("recordDate");
+    const courseNameInput = document.getElementById("courseName");
+    const recordDistanceInput = document.getElementById("recordDistance");
+    const recordHoursInput = document.getElementById("recordHours");
+    const recordMinutesInput = document.getElementById("recordMinutes");
+    const saveRecordButton = document.getElementById("saveRecordButton");
+    const clearRecordsButton = document.getElementById("clearRecordsButton");
+    const recordMessage = document.getElementById("recordMessage");
+    const recordTableBody = document.getElementById("recordTableBody");
+
+    // 브라우저에 저장된 기록을 읽어와서 rideRecords 배열에 담습니다.
+    let rideRecords = loadRecords();
+
+    function showMessage(target, text, type) {
+      target.innerHTML = text;
+      target.className = target.className.includes("record-message")
+        ? "message record-message show " + type
+        : "message show " + type;
+    }
+
+    function hideMessage(target) {
+      target.innerHTML = "";
+      target.className = target.className.includes("record-message")
+        ? "message record-message"
+        : "message";
+    }
+
+    function getNumber(input) {
+      return input.value.trim() === "" ? 0 : Number(input.value);
+    }
+
+    // 거리와 시간을 검사하고, 계산에 필요한 숫자로 바꿔주는 함수입니다.
+    function validateRide(distanceInputElement, hoursInputElement, minutesInputElement, distanceName, timeName) {
+      const distance = getNumber(distanceInputElement);
+      const hours = getNumber(hoursInputElement);
+      const minutes = getNumber(minutesInputElement);
+      const errors = [];
+
+      if (distanceInputElement.value.trim() === "") {
+        errors.push(distanceName + " 입력해 주세요.");
+      } else if (!Number.isFinite(distance) || distance <= 0) {
+        errors.push(distanceName + " 0보다 큰 숫자로 입력해 주세요.");
+      }
+
+      if (hoursInputElement.value.trim() === "" && minutesInputElement.value.trim() === "") {
+        errors.push(timeName + " 시간 또는 분으로 입력해 주세요.");
+      }
+
+      if (!Number.isFinite(hours) || hours < 0) {
+        errors.push("시간은 0 이상 숫자로 입력해 주세요.");
+      }
+
+      if (!Number.isFinite(minutes) || minutes < 0) {
+        errors.push("분은 0 이상 숫자로 입력해 주세요.");
+      }
+
+      if (minutes >= 60) {
+        errors.push("분은 0부터 59 사이로 입력해 주세요. 예: 1시간 20분");
+      }
+
+      // 평균속도는 km / 시간으로 계산하므로, 분을 시간 단위로 바꿉니다.
+      const totalHours = hours + minutes / 60;
+
+      if (totalHours <= 0) {
+        errors.push("전체 주행시간은 0분보다 길어야 합니다.");
+      }
+
+      return {
+        distance: distance,
+        hours: hours,
+        minutes: minutes,
+        totalHours: totalHours,
+        errors: errors
+      };
+    }
+
+    // 계산하기 버튼을 눌렀을 때 평균속도를 계산합니다.
+    function calculateAverageSpeed() {
+      const result = validateRide(distanceInput, hoursInput, minutesInput, "주행거리는", "주행시간은");
+
+      if (result.errors.length > 0) {
+        showMessage(message, result.errors.join("<br>"), "error");
+        return;
+      }
+
+      const speed = result.distance / result.totalHours;
+      showMessage(
+        message,
+        "평균속도는 <span class=\"speed\">" + speed.toFixed(2) + " km/h</span>입니다.",
+        "success"
+      );
+    }
+
+    // 브라우저에 저장된 주행 기록을 읽어옵니다.
+    function loadRecords() {
+      const savedRecords = localStorage.getItem(STORAGE_KEY);
+
+      if (!savedRecords) {
+        return [];
+      }
+
+      try {
+        const parsedRecords = JSON.parse(savedRecords);
+        return Array.isArray(parsedRecords) ? parsedRecords : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    // 현재 주행 기록 배열을 브라우저에 저장합니다.
+    function saveRecords() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rideRecords));
+    }
+
+    function formatTime(hours, minutes) {
+      const parts = [];
+
+      if (hours > 0) {
+        parts.push(hours + "시간");
+      }
+
+      if (minutes > 0) {
+        parts.push(minutes + "분");
+      }
+
+      return parts.join(" ") || "0분";
+    }
+
+    // rideRecords 배열에 있는 내용을 화면 아래 표로 그립니다.
+    function renderRecords() {
+      recordTableBody.innerHTML = "";
+
+      if (rideRecords.length === 0) {
+        recordTableBody.innerHTML = "<tr class=\"empty-row\"><td colspan=\"5\">저장된 주행 기록이 없습니다.</td></tr>";
+        return;
+      }
+
+      rideRecords.forEach(function(record) {
+        const row = document.createElement("tr");
+        const cells = [
+          record.date,
+          record.course,
+          record.distance.toFixed(1) + " km",
+          formatTime(record.hours, record.minutes),
+          record.speed.toFixed(2) + " km/h"
+        ];
+
+        cells.forEach(function(text) {
+          const cell = document.createElement("td");
+          cell.textContent = text;
+          row.appendChild(cell);
+        });
+
+        recordTableBody.appendChild(row);
+      });
+    }
+
+    // 저장하기 버튼을 눌렀을 때 새 주행 기록을 추가합니다.
+    function saveRideRecord() {
+      const date = recordDateInput.value;
+      const course = courseNameInput.value.trim();
+      const result = validateRide(recordDistanceInput, recordHoursInput, recordMinutesInput, "거리는", "시간은");
+      const errors = result.errors;
+
+      if (date === "") {
+        errors.unshift("날짜를 선택해 주세요.");
+      }
+
+      if (course === "") {
+        errors.unshift("코스명을 입력해 주세요.");
+      }
+
+      if (errors.length > 0) {
+        showMessage(recordMessage, errors.join("<br>"), "error");
+        return;
+      }
+
+      rideRecords.push({
+        date: date,
+        course: course,
+        distance: result.distance,
+        hours: result.hours,
+        minutes: result.minutes,
+        speed: result.distance / result.totalHours
+      });
+
+      saveRecords();
+      renderRecords();
+      showMessage(recordMessage, "주행 기록이 저장되었습니다.", "success");
+
+      courseNameInput.value = "";
+      recordDistanceInput.value = "";
+      recordHoursInput.value = "";
+      recordMinutesInput.value = "";
+    }
+
+    // 전체 기록 삭제 버튼을 눌렀을 때 저장된 기록을 모두 지웁니다.
+    function clearRecords() {
+      if (rideRecords.length === 0) {
+        showMessage(recordMessage, "삭제할 주행 기록이 없습니다.", "error");
+        return;
+      }
+
+      rideRecords = [];
+      saveRecords();
+      renderRecords();
+      showMessage(recordMessage, "전체 주행 기록을 삭제했습니다.", "success");
+    }
+
+    // 날짜 입력칸에 오늘 날짜를 자동으로 넣습니다.
+    function setToday() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      recordDateInput.value = year + "-" + month + "-" + day;
+    }
+
+    // 버튼을 클릭하면 어떤 함수를 실행할지 연결합니다.
+    calculateButton.addEventListener("click", calculateAverageSpeed);
+    saveRecordButton.addEventListener("click", saveRideRecord);
+    clearRecordsButton.addEventListener("click", clearRecords);
+
+    // 평균속도 입력칸에서 Enter를 눌러도 계산되게 합니다.
+    [distanceInput, hoursInput, minutesInput].forEach(function(input) {
+      input.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+          calculateAverageSpeed();
+        }
+      });
+    });
+
+    // 기록 입력칸에서 Enter를 눌러도 저장되게 합니다.
+    [recordDateInput, courseNameInput, recordDistanceInput, recordHoursInput, recordMinutesInput].forEach(function(input) {
+      input.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+          saveRideRecord();
+        }
+      });
+    });
+
+    // 페이지가 처음 열릴 때 오늘 날짜와 저장된 기록을 화면에 보여줍니다.
+    setToday();
+    renderRecords();
+    hideMessage(recordMessage);
+  </script>
+</body>
+</html>
